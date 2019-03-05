@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <hlist.h>
+#include <pthread.h>
 
 #ifdef TEST
 	#include<stdio.h>
@@ -48,48 +48,27 @@ int add_wfile(const char *filename, unsigned int flag)
 		return wd;
 
 	
-	
-	
 }
 
-int del_wfile(const char *filename)
-{
-	int wd = find_fd(filename);
+void *inotify_watch(void *argv){
 
-	if(wd){
-		inotify_rm_watch(inotify_fd, wd);
-	}
-	else{
-		/*del error*/
-		return -1;
-	}
+	sleep(10);
+	
+	printf("add ok\n");	
+       	int wd = add_wfile("./test1.txt", IN_MODIFY);
 
-	return 0;
 }
-
-
-
-#ifdef TEST
 int main(){
 	
 	init_watch();
+	pthread_t pthread_d[2] = {0};
 
-       	int wd1 = watch_file("./test1.txt", IN_MODIFY);
+	pthread_create(&pthread_d[0] , NULL, inotify_watch, NULL);
 
-       	int wd2 = watch_file("./test2.txt", IN_MODIFY);
-
-	
 	char buf[1024] = {0};
 	while(1){
 		read(inotify_fd, buf, 1024);
 		printf("recv\n");
 	}
-
-	inotify_rm_watch(inotify_fd, wd1);
-	inotify_rm_watch(inotify_fd, wd2);
-		
-	free_watch();
-
 	return 0;;
 }
-#endif

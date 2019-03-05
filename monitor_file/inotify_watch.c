@@ -36,12 +36,8 @@ static int event_check (int fd);
 static int process_inotify_events (queue_t q, int fd);
 static int read_events (queue_t q, int fd);
 
-/* Signal handler that simply resets a flag to cause termination */
-void signal_handler (int signum)
-{
-	keep_running = 0;
-}
 int inotify_fd = 0;
+
 void* inotify_watch(void *argv)
 {
 	/* This is the file descriptor for the inotify watch */
@@ -76,13 +72,8 @@ void* inotify_watch(void *argv)
 			exit(-1);
 		}
 
-
 		process_inotify_events (q, inotify_fd);
 		
-
-
-		printf ("\nTerminating\n");
-
 		/* Finish up by closing the fd, destroying the queue,
 		   and returning a proper code
 		   */
@@ -103,9 +94,7 @@ int watch_file(const char *dirname)
 	}
 	else
 	{
-		//watched_items++;
 		printf ("Watching %s WD=%d\n", dirname, wd);
-		//printf ("Watching = %d items\n", watched_items); 
 		wd = hash_push(wd, dirname);
 	}
 	return wd;

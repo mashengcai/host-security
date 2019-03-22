@@ -1,61 +1,72 @@
 /**
- * @file  monitor_file.c
- * @brief ·À´Û¸Ä
+ * @file  
+ * @brief 
  * @author    yu
- * @date     2017-10-27
+ * @date     2019-03-21
  * @version  A001 
  * @copyright yu                                                              
  */
-#include <time.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
-#include <assert.h>
-#include <xm_runlog_interface.h>
 
-#include "event_queue.h"
-#include "file_tools.h"
-#include "inotify_watch.h"
-#include "monitor_handle.h"
+#include <runlog.h>
+#include <pthread.h>
+#include <hlist.h>
+
+#include "struct.h"
+
+#define MONITOR_SIZE (sizeof(monitor_s))
 
 void monitor_event_handle(void);
 void monitor_error(int m_err, char *buf);
+
+
+monitor_s* init()
+{
+	monitor_s *monitor_t = MALLOC(MONITOR_SIZE);
+	if(!monitor_t)
+		exit(1);
+	
+	memset(monitor_t, 0, MONITOR_SIZE);
+	
+	INIT_LIST_HEAD(&monitor_t->queue);
+	INIT_LIST_HEAD(&monitor_t->file);
+	
+	monitor_t->inotify_fd = inotify_init();
+	if(monitor_t->inotify_fd <= 0)
+		exit(2);
+	
+	monitor_t->keep_running = 1;
+	
+	if(!read_conf())
+		exit(3);
+	
+	return monitor_t;
+}
+
 int main()
 {
+	runlog_open();
+	
+	monitor_s* monitor_t = init();
 	
 	pthread_t pthread_d[2] = {0};
 	
-	queue_t q = queue_create(128);
-		
-	xm_log_open();
-
-	//monitor file process
-	if(0 != pthread_create(&pthread_d[0] , NULL, inotify_watch, q))
-	{
-		xm_log_write(XMLOG_MONITOR_FILE, LOG_ERR, __FILE__, __FUNCTION__, __LINE__, " create inotify_watch err");
+	//watch file
+	if(0 != pthread_create(&pthread_d[0] , NULL, inotify_watch, monitor_t)){
+		debuginfo(ERROR, "create watch pthread error");
+		exit(1);
 	}
 
-	//monitor file process
-	if(0 != pthread_create(&pthread_d[1] , NULL, inotify_execd, q))
-	{
-		xm_log_write(XMLOG_MONITOR_FILE, LOG_ERR, __FILE__, __FUNCTION__, __LINE__, " create inotify_execd err");
+	//event handle
+	if(0 != pthread_create(&pthread_d[1] , NULL, inotify_execd, monitor_t)){
+		debuginfo(ERROR, "create execd pthread error");
+		exit(2);
 	}
 	
-	read_watch_conf();
+	read_conf();
 		
 	init_watch();
 	
-	while(1)
-	{
-		monitor_event_handle();
-		//sleep(2);
-	}
+	monitor_event_handle();
 		
 	return 0;	
 }
@@ -96,7 +107,6 @@ void monitor_event_handle(void)
 
 	}
 #endif
-	
 }
 void monitor_error(int m_err, char *buf)
 {

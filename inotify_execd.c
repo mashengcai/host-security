@@ -11,7 +11,7 @@
 
 #include "struct.h"
 
-void handle_debug (queue_s *event)
+void handle_debug (queue_entry_t event)
 {
 	/* If the event was associated with a filename, we will store it here */
 	char *cur_event_filename = NULL;
@@ -151,7 +151,7 @@ void handle_debug (queue_s *event)
 	}
 }
 
-void handle_event (queue_s *event)
+void handle_event (queue_entry_t event)
 {
 	handle_debug(event);
 #if 0
@@ -195,14 +195,14 @@ void handle_event (queue_s *event)
 	return ;
 }
 
-void handle_events(struct list_head *q)
+void handle_events (queue_t q)
 {
-	if(!list_empty(q)){
-		queue_s *pos = NULL, *n = NULL;
-		list_for_each_entry_safe(pos, n, q, node){
-			handle_event (pos);
-			FREE(pos);
-		}
+	queue_entry_t event;
+	while (!queue_empty (q))
+	{
+		event = queue_dequeue (q);
+		handle_event (event);
+		free (event);
 	}
 }
 

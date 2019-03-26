@@ -10,6 +10,10 @@
 #include <runlog.h>
 #include <pthread.h>
 #include <hlist.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "struct.h"
 
@@ -17,7 +21,29 @@
 
 void monitor_event_handle(void);
 void monitor_error(int m_err, char *buf);
+void monitor_event_handle(void);
 
+
+file_s *create_file_s(char *name){
+
+	file_s *file = MALLOC(sizeof(file_s));
+	
+	file->file_name = MALLOC(strlen(name) + 1);
+
+	strcpy(file->file_name, name);
+
+	return file;
+
+}
+
+int read_conf(struct list_head *list)
+{
+	file_s *f = create_file_s("/root/github/host-security/test/123");
+
+	list_add_tail(&f->node, list);
+
+	return 0;
+}
 
 monitor_s* init()
 {
@@ -27,8 +53,8 @@ monitor_s* init()
 	
 	memset(monitor_t, 0, MONITOR_SIZE);
 	
-	INIT_LIST_HEAD(&monitor_t->queue);
-	INIT_LIST_HEAD(&monitor_t->file);
+	monitor_t->queue = queue_create();
+	INIT_LIST_HEAD(&monitor_t->file_list);
 	
 	monitor_t->inotify_fd = inotify_init();
 	if(monitor_t->inotify_fd <= 0)
@@ -36,11 +62,14 @@ monitor_s* init()
 	
 	monitor_t->keep_running = 1;
 	
-	if(!read_conf())
+	if(read_conf(&monitor_t->file_list))
 		exit(3);
 	
 	return monitor_t;
 }
+
+void *inotify_execd(void *argv);
+void* inotify_watch(void *argv);
 
 int main()
 {
@@ -52,19 +81,15 @@ int main()
 	
 	//watch file
 	if(0 != pthread_create(&pthread_d[0] , NULL, inotify_watch, monitor_t)){
-		debuginfo(ERROR, "create watch pthread error");
+		debuginfo(LOG_ERROR, "create watch pthread error");
 		exit(1);
 	}
 
 	//event handle
 	if(0 != pthread_create(&pthread_d[1] , NULL, inotify_execd, monitor_t)){
-		debuginfo(ERROR, "create execd pthread error");
+		debuginfo(LOG_ERROR, "create execd pthread error");
 		exit(2);
 	}
-	
-	read_conf();
-		
-	init_watch();
 	
 	monitor_event_handle();
 		
@@ -72,6 +97,13 @@ int main()
 }
 void monitor_event_handle(void)
 {
+
+	while(1){
+		printf("running...\n");
+		sleep(5);
+	}
+
+	return ;
 #if 0
 	int ret = 0;
 	event_queue_s msg = {0};

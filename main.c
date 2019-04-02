@@ -171,8 +171,7 @@ void monitor_event_handle(void)
 }
 void monitor_error(int m_err, char *buf)
 {
-	switch(m_err)
-	{
+	switch(m_err){
 		case -1:
 			strcpy(buf, "NULL");
 			break;	

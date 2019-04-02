@@ -16,31 +16,60 @@
 #include <unistd.h>
 
 #include "struct.h"
+#include <stdcomm.h>
 
 #define MONITOR_SIZE (sizeof(monitor_s))
+
+#define CONF	"./sehost.cnf"
 
 void monitor_event_handle(void);
 void monitor_error(int m_err, char *buf);
 void monitor_event_handle(void);
 
+file_s *create_file_s(char *name, unsigned int action){
 
-file_s *create_file_s(char *name){
+	if( 0 != access(name, F_OK))
+		return NULL;
 
 	file_s *file = MALLOC(sizeof(file_s));
+	if(file == NULL)
+		return NULL;
 	
 	file->file_name = MALLOC(strlen(name) + 1);
+	printf("%s\n", name);
+
+	file->action = action;
 
 	strcpy(file->file_name, name);
 
 	return file;
-
 }
 
 int read_conf(struct list_head *list)
 {
-	file_s *f = create_file_s("/root/github/host-security/test/123");
+	char buf[512] = {0};
+	char path[128] = {0};
+	unsigned int action = 0;
 
-	list_add_tail(&f->node, list);
+	FILE *fp = fopen(CONF, "r");
+	if(!fp)
+		return -1;
+
+	while(fgets(buf, sizeof(buf), fp) != NULL){
+	
+		sscanf(buf, "%s %u", path, &action);
+
+		file_s *f = create_file_s(clean_line(path), action);
+
+		if(f == NULL){
+			debuginfo(LOG_ERROR, "file_s = %s", clean_line(path));
+			continue;
+		}
+
+		list_add_tail(&f->node, list);
+	}
+
+	fclose(fp);
 
 	return 0;
 }

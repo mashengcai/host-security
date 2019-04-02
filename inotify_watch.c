@@ -43,9 +43,9 @@ int watch_file(const char *dirname)
 	int wd = inotify_add_watch (*inotify_fp, dirname, INOTIFY_FLAG);
 	
 	if (wd < 0)
-		debuginfo(LOG_ERROR, "Watching %s WD=%d\n", dirname, wd);
+		debuginfo(LOG_ERROR, "Watching %s WD=%d", dirname, wd);
 	else
-		debuginfo(LOG_DEBUG, "Watching %s WD=%d\n", dirname, wd);
+		debuginfo(LOG_DEBUG, "Watching %s WD=%d", dirname, wd);
 	
 	return wd;
 }
@@ -57,14 +57,14 @@ int rm_watch_file(struct list_head *head, const char * path)
 	list_for_each_entry(pos, head, node){
 		if( !strcmp(path, pos->file_name )){
 			if(0 == inotify_rm_watch ( *inotify_fp, pos->wd)){
-				debuginfo(LOG_DEBUG, "del Watch %s WD=%d\n", dirname, pos->wd);
+				debuginfo(LOG_DEBUG, "del Watch %s WD=%d", dirname, pos->wd);
 				pos->wd = 0;
 				return 0;
 			}		
 		}
 	}
 	
-	debuginfo(LOG_ERROR, "del Watch %s WD=%d\n", dirname, pos->wd);
+	debuginfo(LOG_ERROR, "del Watch %s WD=%d", dirname, pos->wd);
 	return -1;
 }
 
@@ -118,20 +118,24 @@ int read_events (queue_t q, int fd)
 	ssize_t r;
 	size_t event_size, q_event_size;
 	int count = 0;
+
+	memset(buffer, 0, sizeof(buffer));
 	r = read (fd, buffer, 16384);
 	if (r <= 0)
 		return r;
 	buffer_i = 0;
-	while (buffer_i < r)
-	{
+	while (buffer_i < r){
 		pevent = (struct inotify_event *) &buffer[buffer_i];
 		event_size =  offsetof (struct inotify_event, name) + pevent->len;
 		q_event_size = offsetof (struct queue_entry, inot_ev.name) + pevent->len;
-		event = malloc (q_event_size);
+		event = MALLOC (q_event_size);
 		memmove (&(event->inot_ev), pevent, event_size);
 		queue_enqueue (event, q);
 		buffer_i += event_size;
 		count++;
+
+		debuginfo(LOG_DEBUG, "events wd = %d count = %d", pevent->wd, count);
 	}
 	return count;
 }
+

@@ -3,9 +3,7 @@
 #include <hlist.h>
 #include "event_queue.h"
 
-#define INOTIFY_FLAG	(IN_MODIFY | IN_MOVE | IN_CREATE | IN_DELETE |IN_DELETE_SELF | IN_MOVE_SELF)
-
-#define INOTIFY_FLAG	(IN_MODIFY | IN_MOVE | IN_CREATE | IN_DELETE |IN_DELETE_SELF | IN_MOVE_SELF)
+#define INOTIFY_FLAG	(IN_MODIFY | IN_MOVE | IN_CREATE | IN_DELETE |IN_DELETE_SELF | IN_MOVE_SELF|IN_ISDIR)
 
 #define EVENT_LOCK	pthread_mutex_lock(&gs_list_mtx);
 #define EVENT_UNLOCK	pthread_mutex_unlock(&gs_list_mtx);
@@ -15,6 +13,7 @@
 typedef struct file_list
 {
 	char *file_name;
+	unsigned int action;
 	int wd;
 	struct list_head node;
 }file_s;

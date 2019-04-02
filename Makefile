@@ -26,5 +26,6 @@ $(RUNLIB):
 clean:
 	$(RM) $(OBJS)
 	$(RM) host_security
+
+distclean:clean
 	make clean -C lib
-	$(RM) host_security

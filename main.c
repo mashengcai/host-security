@@ -26,6 +26,9 @@ void monitor_event_handle(void);
 void monitor_error(int m_err, char *buf);
 void monitor_event_handle(void);
 
+int function_1(file_s *pos);
+int function_2(file_s *pos);
+
 file_s *create_file_s(char *name, unsigned int action){
 
 	if( 0 != access(name, F_OK))
@@ -36,11 +39,16 @@ file_s *create_file_s(char *name, unsigned int action){
 		return NULL;
 	
 	file->file_name = MALLOC(strlen(name) + 1);
-	printf("%s\n", name);
 
 	file->action = action;
 
 	strcpy(file->file_name, name);
+
+	file->f_arr[0] = function_1;
+
+	file->f_arr[1] = function_2;
+	
+	file->f_num = 2;
 
 	return file;
 }

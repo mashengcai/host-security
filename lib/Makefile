@@ -1,12 +1,12 @@
-TARGET=librunlog.so libsda.so libcjson.so
+TARGET=librunlog.so libstd.so libcjson.so
 
 all:$(TARGET)
 
 librunlog.so:
 	make -C librunlog
 
-libsda.so:
-	make -C libsda
+libstd.so:
+	make -C libstd
 
 libcjson.so:
 	make -C libjson
@@ -14,7 +14,7 @@ libcjson.so:
 
 clean:
 	make clean -C librunlog
-	make clean -C libsda
+	make clean -C libstd
 	make clean -C libjson
 
 distclean:clean

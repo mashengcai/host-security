@@ -11,17 +11,7 @@
 
 #include <runlog.h>
 #include "struct.h"
-
-static file_s *wd_2_files(struct list_head *head, int wd)
-{
-	file_s *pos = NULL;
-
-	list_for_each_entry(pos, head, node){
-		if(pos->wd == wd)
-			return pos;
-	}
-	return NULL;
-}
+#include "wdtables.h"
 
 void handle_debug_ex (struct list_head *head, queue_entry_t event)
 {
@@ -33,8 +23,10 @@ void handle_debug_ex (struct list_head *head, queue_entry_t event)
 	int cur_event_cookie = event->inot_ev.cookie;
 	unsigned long flags;
 	file_s *pos = NULL;
+	wdtable_s *wdtab = NULL;
 
-	pos = wd_2_files(head, cur_event_wd);
+	wdtab = wd_2_path(cur_event_wd);
+
 	if(pos != NULL){
 		cur_event_filename = pos->file_name;
 	}
@@ -163,6 +155,28 @@ void handle_debug_ex (struct list_head *head, queue_entry_t event)
 	}
 }
 
+file_s *path_2_files(struct list_head *head, wdtable_s *tab)
+{
+	char *path = NULL;
+
+	if(tab->dir_name != NULL)
+		path = tab->dir_name;
+	else
+		path = tab->file_name;
+
+	if(path == NULL)
+		return NULL;
+
+	file_s *pos = NULL;
+
+	list_for_each_entry(pos, head, node){
+		if( 0 == strcmp(pos->file_name, path))
+			return pos;
+	}
+
+	return NULL;
+}
+
 void handle_event (struct list_head *head, queue_entry_t event)
 {
 
@@ -171,14 +185,26 @@ void handle_event (struct list_head *head, queue_entry_t event)
 	
 	int i = 0, ret = 0;
 	int cur_event_wd = event->inot_ev.wd;
+	file_s *pos = NULL;
+	wdtable_s *wtab = NULL;
 	
-	file_s *pos = wd_2_files(head, cur_event_wd);
+	wtab = wd_2_path(cur_event_wd);
+	if(wtab == NULL){
+		debuginfo(LOG_ERROR, "get path error wd = %d", cur_event_wd);
+		return;
+	}
+
+	pos = path_2_files(head, wtab);
+	if(pos == NULL){
+		debuginfo(LOG_ERROR, "get file error file_name = %d", wtab->dir_name);
+		return;
+	}
 	
-	for(i; i < pos->f_num; i++){
+	for(; i < pos->f_num; i++){
 		ret = pos->f_arr[i](pos);
 		if(ret < 0)
-			debuginfo(LOG_ERROR, "path=%s,wd=%d,ret=%ld\n", pos->file_name, cur_event_wd, ret);
-		debuginfo(LOG_DEBUG, "path=%s,wd=%d,ret=%ld\n", pos->file_name, cur_event_wd, ret);
+			debuginfo(LOG_ERROR, "path=%s,wd=%d,ret=%d\n", pos->file_name, cur_event_wd, ret);
+		debuginfo(LOG_DEBUG, "path=%s,wd=%d,ret=%d\n", pos->file_name, cur_event_wd, ret);
 	}
 	
 	return ;

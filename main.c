@@ -13,9 +13,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <unistd.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "struct.h"
+#include "file_tools.h"
 #include <stdcomm.h>
 
 #define MONITOR_SIZE (sizeof(monitor_s))
@@ -29,14 +34,23 @@ void monitor_event_handle(void);
 int function_1(file_s *pos);
 int function_2(file_s *pos);
 
+void *inotify_execd(void *argv);
+void* inotify_watch(void *argv);
+
+monitor_s *g_monitor = NULL;
+
 file_s *create_file_s(char *name, unsigned int action){
 
-	if( 0 != access(name, F_OK))
-		return NULL;
 
 	file_s *file = MALLOC(sizeof(file_s));
 	if(file == NULL)
 		return NULL;
+
+	file->file_type = check_file_type(name);
+	if( file->file_type < 0){
+		FREE(file);
+		return NULL;
+	}
 	
 	file->file_name = MALLOC(strlen(name) + 1);
 
@@ -82,8 +96,33 @@ int read_conf(struct list_head *list)
 	return 0;
 }
 
+#define IP 	"10.250.22.31"
+#define PORT	6666 
+
+int init_socket(const char *ip, unsigned int port)
+{
+	int skd = 0;
+	skd = socket(AF_INET, SOCK_STREAM, 0);
+	
+	struct sockaddr_in addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port);
+	addr.sin_addr.s_addr = inet_addr(ip);
+
+	if(skd < 0)
+		return -1;
+
+	if( 0 != connect(skd, (struct sockaddr *)&addr, sizeof(addr))){
+		close(skd);
+		return -2;
+	}
+
+	return skd;
+}
+
 monitor_s* init()
 {
+	//监控结构体
 	monitor_s *monitor_t = MALLOC(MONITOR_SIZE);
 	if(!monitor_t)
 		exit(1);
@@ -99,31 +138,42 @@ monitor_s* init()
 	
 	monitor_t->keep_running = 1;
 	
-	if(read_conf(&monitor_t->file_list))
+	/* conf file */
+	if(read_conf(&monitor_t->file_list)){
+		fprintf(stderr, "Please check conf file !!!\n");
 		exit(3);
+	}
+
+	debuginfo(LOG_DEBUG, "read conf OK!");
 	
+	/*init socket*/
+	monitor_t->sockfd = init_socket(IP, PORT);
+	if(monitor_t->sockfd < 0){
+		fprintf(stderr, "Please check network server !!!\n");
+		exit(4);
+	}
+
+	debuginfo(LOG_DEBUG, "init network OK!");
+
 	return monitor_t;
 }
-
-void *inotify_execd(void *argv);
-void* inotify_watch(void *argv);
 
 int main()
 {
 	runlog_open();
 	
-	monitor_s* monitor_t = init();
+	g_monitor = init();
 	
 	pthread_t pthread_d[2] = {0};
 	
 	//watch file
-	if(0 != pthread_create(&pthread_d[0] , NULL, inotify_watch, monitor_t)){
+	if(0 != pthread_create(&pthread_d[0] , NULL, inotify_watch, g_monitor)){
 		debuginfo(LOG_ERROR, "create watch pthread error");
 		exit(1);
 	}
 
 	//event handle
-	if(0 != pthread_create(&pthread_d[1] , NULL, inotify_execd, monitor_t)){
+	if(0 != pthread_create(&pthread_d[1] , NULL, inotify_execd, g_monitor)){
 		debuginfo(LOG_ERROR, "create execd pthread error");
 		exit(2);
 	}

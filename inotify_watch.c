@@ -14,9 +14,12 @@
 #include <errno.h>
 #include <libgen.h>
 #include <assert.h>
+#include <dirent.h>
 
 #include "struct.h"
 #include "runlog.h"
+#include "wdtables.h"
+#include "file_tools.h"
 
 static int event_check (int fd);
 static int process_inotify_events (queue_t *q, int fd);
@@ -50,6 +53,49 @@ int watch_file(const char *dirname)
 	return wd;
 }
 
+int watch_tree_dir(const char *path, const char *root)
+{
+	DIR *dir;
+	struct dirent *ptr;
+	struct stat ft = {0};
+
+	char base[1024];
+	assert( path != NULL );
+	
+	if(path == NULL || path[0] == '\0')
+		return -1;
+	
+
+	if ((dir = opendir(path)) == NULL){
+		perror("Open dir error...");
+		return -2;
+	}
+
+	while ((ptr = readdir(dir)) != NULL){
+		if( strcmp(ptr->d_name,".") == 0 || strcmp(ptr->d_name, "..") == 0 ) 
+			continue;
+
+		memset(base, 0, sizeof(base));
+
+		if(path[strlen(path) - 1] == '/')
+			sprintf(base, "%s%s",path, ptr->d_name);
+		else
+			sprintf(base, "%s/%s",path, ptr->d_name);
+
+		if( lstat(base, &ft)!= 0)
+			continue;
+
+		if( S_ISDIR(ft.st_mode) ){
+			int wd = watch_tree_dir(base, root);
+			if(wd > 0)
+				push_wd(wd, base, root);
+		}
+	}
+	closedir(dir);
+
+	return watch_file(path);
+}
+
 int rm_watch_file(struct list_head *head, const char * path)
 {
 	file_s *pos = NULL;
@@ -79,13 +125,15 @@ int watch_file_interface(struct list_head *list)
 	int wd = 0;
 	
 	list_for_each_entry(pos, list, node){
-		//file_type = check_file_type(pos->file_name);
-		 wd = watch_file(pos->file_name);
-		 if(wd <= 0)
-			 pos->wd = 0;
-		 pos->wd = wd;
+		if(pos->file_type == FILE_TYPE){
+			wd = watch_file(pos->file_name);
+		}else if(pos->file_type == DIR_TYPE){
+			wd = watch_tree_dir(pos->file_name, pos->file_name);
+		}
+		if(wd > 0)
+			push_wd(wd, pos->file_name, NULL);
 	}
-	
+
 	return 0;
 }
 

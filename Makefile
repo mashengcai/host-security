@@ -11,7 +11,7 @@ RUNLIB=./lib/librunlog/librunlog.so
 
 all:host_security
 
-OBJS=inotify_watch.o inotify_execd.o main.o event_queue.o function.o
+OBJS=inotify_watch.o inotify_execd.o main.o event_queue.o function.o wdtables.o file_tools.o
 
 host_security: $(OBJS) $(RUNLIB)
 	$(CC) $(INCS) $(CFLAG) $(OBJS) $(LIBS) $(OTHER) -o host_security

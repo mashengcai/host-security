@@ -1,13 +1,13 @@
 CC=gcc
 CFLAG=-g -Wall
 
-INCS=-I./lib/ -I./lib/librunlog -I./lib/libstd
+INCS=-I./lib/ -I./lib/librunlog -I./lib/libstd -I./lib/libjson
 
-LIBS=-L ./lib/librunlog/ -lrunlog  -L./lib/libstd/ -lcomm  -lpthread
+LIBS=-L ./lib/librunlog/ -lrunlog  -L./lib/libstd/ -lcomm  -L./lib/libjson/ -lcjson -lpthread -lm
 
-OTHER=-Wl,-rpath=./lib/librunlog/ -Wl,-rpath=./lib/libstd/
+OTHER=-Wl,-rpath=./lib/librunlog/ -Wl,-rpath=./lib/libstd/ -Wl,-rpath=./lib/libjson/
 
-RUNLIB=./lib/librunlog/librunlog.so
+RUNLIB=./lib/librunlog/librunlog.so 
 
 all:host_security
 

@@ -77,10 +77,14 @@ int watch_tree_dir(const char *path, const char *root)
 
 		memset(base, 0, sizeof(base));
 
+#if 0
 		if(path[strlen(path) - 1] == '/')
 			sprintf(base, "%s%s",path, ptr->d_name);
 		else
 			sprintf(base, "%s/%s",path, ptr->d_name);
+#else
+		sprintf(base, "%s/%s",path, ptr->d_name);
+#endif
 
 		if( lstat(base, &ft)!= 0)
 			continue;

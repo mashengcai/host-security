@@ -31,8 +31,8 @@ void monitor_event_handle(void);
 void monitor_error(int m_err, char *buf);
 void monitor_event_handle(void);
 
-int function_1(file_s *pos);
-int function_2(file_s *pos);
+int function_1(handle_s *pos);
+int function_2(handle_s *pos);
 
 void *inotify_execd(void *argv);
 void* inotify_watch(void *argv);
@@ -41,22 +41,28 @@ monitor_s *g_monitor = NULL;
 
 file_s *create_file_s(char *name, unsigned int action){
 
+	file_s *file = NULL;
+	int len = 0;
 
-	file_s *file = MALLOC(sizeof(file_s));
-	if(file == NULL)
+	file = MALLOC(sizeof(file_s));
+	if(name == NULL || file == NULL)
 		return NULL;
+
+	len = strlen(name);
 
 	file->file_type = check_file_type(name);
 	if( file->file_type < 0){
 		FREE(file);
 		return NULL;
 	}
-	
+
 	file->file_name = MALLOC(strlen(name) + 1);
-
-	file->action = action;
-
 	strcpy(file->file_name, name);
+
+	if(file->file_type == DIR_TYPE && name[len - 1] == '/')
+		file->file_name[len - 1] = '\0';
+	
+	file->action = action;
 
 	file->f_arr[0] = function_1;
 

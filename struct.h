@@ -15,6 +15,12 @@
 
 #define FUN_MAX 32
 
+typedef struct handle{
+	char *file_name;
+	char *dir_name;
+	char *mask;
+	unsigned int wd;
+}handle_s;
 
 typedef struct file_list
 {
@@ -26,7 +32,7 @@ typedef struct file_list
 		
 	int f_num;
 	int sockfd;
-	int (*f_arr[FUN_MAX])(struct file_list *);
+	int (*f_arr[FUN_MAX])(struct handle *);
 }file_s;
 
 typedef struct monitor{

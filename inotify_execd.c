@@ -298,7 +298,8 @@ void handle_event (struct list_head *head, queue_entry_t event)
 	if (event->inot_ev.len){
 		sprintf(buf, "%s/%s", wtab->file_name, event->inot_ev.name);
 		data.file_name = buf;
-	}
+	}else
+		data.file_name = wtab->file_name;
 	
 	if(wtab->dir_name == NULL)
 		data.dir_name = wtab->file_name;
@@ -307,12 +308,13 @@ void handle_event (struct list_head *head, queue_entry_t event)
 
 	data.wd = cur_event_wd;
 	data.mask = analysis_event(event->inot_ev.mask);
+	data.time = time(NULL);
 	
 	for(; i < pos->f_num; i++){
 		ret = pos->f_arr[i](&data);
 		if(ret < 0)
-			debuginfo(LOG_ERROR, "path=%s,wd=%d,ret=%d\n", pos->file_name, cur_event_wd, ret);
-		debuginfo(LOG_DEBUG, "path=%s,wd=%d,ret=%d\n", pos->file_name, cur_event_wd, ret);
+			debuginfo(LOG_ERROR, "path=%s,wd=%d,ret=%d", pos->file_name, cur_event_wd, ret);
+		debuginfo(LOG_DEBUG, "path=%s,wd=%d,ret=%d", pos->file_name, cur_event_wd, ret);
 	}
 	
 	return ;

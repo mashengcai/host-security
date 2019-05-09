@@ -20,6 +20,7 @@ typedef struct handle{
 	char *dir_name;
 	char *mask;
 	unsigned int wd;
+	unsigned int time;
 }handle_s;
 
 typedef struct file_list

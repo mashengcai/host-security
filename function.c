@@ -11,9 +11,11 @@ char *struct_2_json(handle_s *pos){
 
 	root = create_obj();
 
-	add_str_2_obj(root, "mask", 		pos->mask);
-	add_str_2_obj(root, "file_name", 	pos->file_name);
 	add_str_2_obj(root, "dir_name", 	pos->dir_name);
+	add_str_2_obj(root, "file_name", 	pos->file_name);
+	add_str_2_obj(root, "mask", 		pos->mask);
+
+	add_int_2_obj(root, "time", 		pos->time);
 	add_int_2_obj(root, "WD", 		pos->wd);
 
 	return cJSON_Print(root);
